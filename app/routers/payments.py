@@ -115,8 +115,8 @@ def make_quick_payment(
         "first_name": getattr(current_user, "first_name", current_user.username),
         "last_name": getattr(current_user, "last_name", ""),
         "email": getattr(current_user, "email", ""),
-        "return_url": "https://yourwebsite.com/return",
-        "notify_url": "https://yourapi.com/payments/monetbil/webhook",
+        "return_url": "http://localhost:8000/citizens/products",
+        "notify_url": "https://localhost:8000/payments/monetbil/webhook",
         "logo": "https://yourwebsite.com/logo.png"
     }
 
