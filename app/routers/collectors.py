@@ -1,0 +1,43 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from typing import List
+from app.db.session import get_db
+from app.core.deps import get_current_collector
+from app.models.user import User
+from app.models.waste import WasteCollection, CollectionStatus
+from app.schemas.waste import WasteCollectionResponse
+
+router = APIRouter(prefix="/collectors", tags=["Collectors"])
+
+# View all pending requests
+@router.get("/requests", response_model=List[WasteCollectionResponse])
+def list_requests(db: Session = Depends(get_db), current_user: User = Depends(get_current_collector)):
+    return db.query(WasteCollection).filter(WasteCollection.status == CollectionStatus.requested).all()
+
+# Accept a request
+@router.put("/requests/{req_id}/accept", response_model=WasteCollectionResponse)
+def accept_request(req_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_collector)):
+    req = db.query(WasteCollection).get(req_id)
+    if not req:
+        raise HTTPException(404, "Request not found")
+    req.collector_id = current_user.id
+    req.status = CollectionStatus.in_progress
+    db.commit()
+    db.refresh(req)
+    return req
+
+# Mark as collected
+@router.put("/requests/{req_id}/complete", response_model=WasteCollectionResponse)
+def complete_request(req_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_collector)):
+    req = db.query(WasteCollection).get(req_id)
+    if not req or req.collector_id != current_user.id:
+        raise HTTPException(403, "Not authorized")
+    req.status = CollectionStatus.completed
+    db.commit()
+    db.refresh(req)
+    return req
+
+# View collector's history
+@router.get("/history", response_model=List[WasteCollectionResponse])
+def collection_history(db: Session = Depends(get_db), current_user: User = Depends(get_current_collector)):
+    return db.query(WasteCollection).filter(WasteCollection.collector_id == current_user.id).all()
