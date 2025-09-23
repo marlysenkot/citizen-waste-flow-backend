@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Float
+from sqlalchemy import Column, Integer, String, ForeignKey, Float, Text
 from sqlalchemy.orm import relationship
+from sqlalchemy.types import JSON
 from app.db.base import Base
 
 class Category(Base):
@@ -10,14 +11,21 @@ class Category(Base):
 
     products = relationship("Product", back_populates="category")
 
+
+
 class Product(Base):
     __tablename__ = "products"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    description = Column(String)
+    description = Column(Text)
     price = Column(Float, nullable=False)
-    category_id = Column(Integer, ForeignKey("categories.id"))
+    stock = Column(Integer, default=0)
+    status = Column(String, default="active")
+    features = Column(JSON, default=[])
+    image = Column(String, nullable=True)
 
+    category_id = Column(Integer, ForeignKey("categories.id"))
     category = relationship("Category", back_populates="products")
-    orders = relationship("Order", back_populates="product")
+
+    orders = relationship("Order", back_populates="product")  # <- fixed

@@ -17,7 +17,11 @@ class UserCreate(UserBase):
 
 class UserResponse(UserBase):
     id: int
-    is_active: bool
+    username: str
+    email: EmailStr
+    role: UserRole
+    status: str         # Active / Inactive / Suspended
+    verified: bool      # True / False
 
     class Config:
-        from_attributes = True
+        orm_mode = True
