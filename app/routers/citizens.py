@@ -75,7 +75,7 @@ def list_orders(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return db.query(Order).filter(Order.user_id == current_user.id).all()
+    return db.query(Order).filter(Order.user_id == current_user.id).join(Order.product).all()
 
 # ---------------- Complaints ----------------
 @router.post("/complaints", response_model=ComplaintResponse)

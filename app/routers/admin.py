@@ -7,6 +7,7 @@ import os, shutil
 from app.db.session import get_db
 from app.core.deps import get_current_admin
 from app.models.base_location import Location
+from app.models.order import Order
 from app.models.user import User, UserRole
 from app.models.product import Product, Category
 from app.models.complaint import Complaint, ComplaintStatus
@@ -15,6 +16,7 @@ from passlib.context import CryptContext
 
 from app.schemas.collector import CollectorResponse
 from app.schemas.location import LocationCreate, LocationResponse
+from app.schemas.order import OrderAdminResponse
 from app.schemas.product import (
     ProductCreate,
     ProductUpdate,
@@ -233,9 +235,31 @@ def resolve_complaint(complaint_id: int, db: Session = Depends(get_db), current_
 
 
 # ----------------- Orders -----------------
-@router.get("/orders", response_model=List[WasteCollectionResponse])
-def list_orders(db: Session = Depends(get_db), current_user: User = Depends(get_current_admin)):
-    return db.query(WasteCollection).order_by(WasteCollection.created_at.desc()).limit(10).all()
+@router.get("/orders")
+def list_all_orders(db: Session = Depends(get_db), current_admin=Depends(get_current_admin)):
+    # Optional: check if user is admin
+    if not getattr(current_admin, "is_admin", True):  # fallback to True if missing
+        return {"error": "Not authorized"}
+
+    orders = db.query(Order).all()
+
+    response = []
+    for o in orders:
+        user = o.user
+        product = o.product
+
+        response.append({
+            "id": o.id,
+            "service": product.name if product else "Unknown Product",
+            "customer": getattr(user, "username", "Unknown User"),
+            "customerEmail": getattr(user, "email", None),
+            "quantity": o.quantity,
+            "price": o.total_price,
+            "status": o.status.value if o.status else "pending",
+            "created_at": o.created_at.isoformat() if o.created_at else None
+        })
+
+    return response
 
 
 # ----------------- Stats -----------------
